@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101c32">
+<title>FIFA PREDICTOR</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f4f8;color:#172033;font-family:Arial,sans-serif}
+header{background:#101c32;color:white;padding:25px 18px;border-radius:0 0 22px 22px}
+header h1{margin:0;font-size:26px}
+header p{color:#bdc9da;font-size:12px}
+.status{background:#243b5b;padding:12px;border-radius:10px;font-size:12px;color:#ffe27a}
+nav{display:flex;gap:7px;padding:14px 10px}
+nav button{flex:1;padding:12px 4px;border:0;border-radius:10px;background:white;font-weight:bold}
+nav button.active{background:#d9ff36}
+main{padding:10px 15px}
+h2{font-size:20px}
+.panel{background:white;padding:16px;border-radius:14px;margin-bottom:14px;box-shadow:0 2px 8px #0000000c}
+.muted{color:#697589;font-size:13px;line-height:1.5}
+label{font-size:13px;font-weight:bold}
+input,select{display:block;width:100%;padding:13px;margin:7px 0 13px;border:1px solid #dce1e9;border-radius:9px;background:white;font-size:15px}
+.action{width:100%;padding:14px;border:0;border-radius:10px;background:#172c49;color:white;font-weight:bold}
+.match{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
+.score{font-size:22px;font-weight:bold}
+.tag{font-size:11px;color:#52617a;background:#edf1f7;padding:5px 8px;border-radius:20px}
+.hidden{display:none}
+footer{text-align:center;color:#8992a2;font-size:11px;padding:25px}
+</style>
+</head>
+<body>
+<header>
+<h1>🏆 FIFA PREDICTOR</h1>
+<p>TON CENTRE DE PRONOSTICS eSOCCER</p>
+<div class="status">● Prototype actif — Scores réels non connectés</div>
+</header>
+
+<nav>
+<button class="active" onclick="showTab('live',this)">Direct</button>
+<button onclick="showTab('analysis',this)">Analyse</button>
+<button onclick="showTab('history',this)">Historique</button>
+</nav>
+
+<main>
+<section id="live">
+<h2>⚽ Matchs FIFA</h2>
+<div class="panel">
+<strong>Connexion 1xBet</strong>
+<p class="muted">Consulte les rencontres sur 1xBet. La récupération automatique des scores sera ajoutée après connexion d'une source de données compatible.</p>
+<button class="action" onclick="window.open('https://1xbet.cd/fr/live/fifa','_blank')">Voir les matchs en direct ↗</button>
+</div>
+
+<div class="panel">
+<strong>Ajouter un match</strong>
+<p class="muted">Enregistre ici les rencontres que tu observes.</p>
+<label>Compétition</label>
+<select id="competition">
+<option>FC 24</option>
+<option>FC 25</option>
+<option>FC 26</option>
+</select>
+<label>Équipe 1</label>
+<input id="team1" placeholder="Ex : Real Madrid">
+<label>Score équipe 1</label>
+<input id="score1" type="number" min="0" placeholder="0">
+<label>Équipe 2</label>
+<input id="team2" placeholder="Ex : Manchester City">
+<label>Score équipe 2</label>
+<input id="score2" type="number" min="0" placeholder="0">
+<button class="action" onclick="addMatch()">Enregistrer le match</button>
+</div>
+<div id="matches"></div>
+</section>
+
+<section id="analysis" class="hidden">
+<h2>📊 Analyse</h2>
+<div class="panel">
+<p class="muted">Choisis un match enregistré pour consulter son score et son état actuel.</p>
+<select id="matchChoice">
+<option value="">Choisir un match</option>
+</select>
+<button class="action" onclick="analyze()">Analyser le match</button>
+<p id="analysisResult" class="muted"></p>
+</div>
+</section>
+
+<section id="history" class="hidden">
+<h2>📚 Historique</h2>
+<div class="panel">
+<div id="historyList" class="muted">Aucun match enregistré.</div>
+</div>
+</section>
+</main>
+
+<footer>
+FIFA PREDICTOR • VERSION 0.1<br>
+Prototype indépendant — non affilié à 1xBet
+</footer>
+
+<script>
+let matches=[];
+try{
+matches=JSON.parse(localStorage.getItem('fifaMatches')||'[]');
+}catch(e){matches=[];}
+
+function showTab(id,button){
+document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+document.getElementById(id).classList.remove('hidden');
+document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+button.classList.add('active');
+}
+
+function safe(s){
+return String(s).replace(/[&<>"']/g,c=>({
+'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+}
+
+function addMatch(){
+let a=document.getElementById('team1').value.trim();
+let b=document.getElementById('team2').value.trim();
+let x=document.getElementById('score1').value;
+let y=document.getElementById('score2').value;
+if(!a||!b||x===''||y===''){
+alert('Remplis tous les champs.');
+return;
+}
+matches.unshift({
+competition:document.getElementById('competition').value,
+a:a,b:b,x:Number(x),y:Number(y),
+date:new Date().toLocaleString('fr-FR')
+});
+localStorage.setItem('fifaMatches',JSON.stringify(matches));
+render();
+document.getElementById('team1').value='';
+document.getElementById('team2').value='';
+document.getElementById('score1').value='';
+document.getElementById('score2').value='';
+alert('Match enregistré !');
+}
+
+function render(){
+document.getElementById('matches').innerHTML=matches.map(m=>`
+<div class="panel">
+<span class="tag">${safe(m.competition)} • Saisie manuelle</span>
+<div class="match">
+<strong>${safe(m.a)}</strong>
+<span class="score">${m.x} - ${m.y}</span>
+<strong>${safe(m.b)}</strong>
+</div>
+<p class="muted">${safe(m.date)}</p>
+</div>`).join('');
+
+document.getElementById('historyList').innerHTML=
+matches.map(m=>`<p>${safe(m.a)} ${m.x} - ${m.y} ${safe(m.b)}<br><small>${safe(m.competition)} • ${safe(m.date)}</small></p>`).join('')||'Aucun match enregistré.';
+
+document.getElementById('matchChoice').innerHTML=
+'<option value="">Choisir un match</option>'+
+matches.map((m,i)=>`<option value="${i}">${safe(m.a)} - ${safe(m.b)}</option>`).join('');
+}
+
+function analyze(){
+let i=document.getElementById('matchChoice').value;
+if(i===''){alert('Choisis un match.');return;}
+let m=matches[i];
+let result=m.x>m.y?'L’équipe 1 mène au score.':
+m.x<m.y?'L’équipe 2 mène au score.':'Les deux équipes sont à égalité.';
+document.getElementById('analysisResult').textContent=
+result+' Attention : ce score ne permet pas de prédire le résultat final.';
+}
+
+render();
+</script>
+</body>
+</html>
